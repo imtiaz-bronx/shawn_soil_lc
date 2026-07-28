@@ -3,20 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shawn's Stability Index LC</title>
+<title>SINMAP-LC</title>
 <link rel="icon" type="image/png" href="Files/soil.png">
 <style>
   :root{
     --ink:#1c2321;
-    --paper:#f2efea;
+    --paper:#f3efe6;
     --panel:#fbf8f1;
+    --beige:#f4ecd8;
     --line:#d8cdb8;
-    --stable:#3f6f43;
-    --stable-soft:#e3ecd9;
-    --unstable:#8a2f24;
-    --unstable-soft:#f0dcd6;
     --muted:#6d675c;
     --accent:#2f5233;
+    /* SINMAP class colours */
+    --c-stable:#1a9850;
+    --c-modstable:#91cf60;
+    --c-quasi:#d9ef8b;
+    --c-lower:#fee08b;
+    --c-upper:#fc8d59;
+    --c-defended:#d73027;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
@@ -25,46 +29,62 @@
     background:var(--paper);color:var(--ink);line-height:1.5;
     padding:32px 20px 64px;
   }
-  .wrap{max-width:820px;margin:0 auto}
+  .wrap{max-width:860px;margin:0 auto}
 
-  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  header{
+    position:relative;
+    border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:24px;
+    min-height:180px;
+    overflow:hidden;
+  }
+  .header-copy{position:relative;z-index:1;min-width:0;padding-right:210px}
+  .header-logo{
+    position:absolute;top:10px;right:0;
+    width:225px;height:auto;
+    opacity:0.85;
+    pointer-events:none;
+    user-select:none;
+  }
   .eyebrow{
     font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
     font-size:11px;letter-spacing:.18em;text-transform:uppercase;
     color:var(--muted);margin-bottom:10px;
   }
-  h1{font-size:29px;font-weight:600;line-height:1.15;letter-spacing:-.01em}
-  header p{margin-top:10px;color:var(--muted);font-size:15px;max-width:60ch}
+  h1{font-size:26px;font-weight:600;line-height:1.2;letter-spacing:-.01em}
+  .subhead{font-size:18px;font-weight:600;color:var(--accent);margin-top:8px}
+  header p{margin-top:12px;color:var(--ink);font-size:14.5px;max-width:66ch}
+  header p a{color:var(--accent)}
 
-  .readout{
-    background:var(--panel);border:1px solid var(--line);border-radius:2px;
-    padding:24px 26px 20px;margin-bottom:26px;
+  /* SI ranking legend */
+  .ranking{margin:22px 0 26px}
+  .ranking h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:12px}
+  .rank-row{display:flex;align-items:center;gap:12px;padding:5px 0;font-size:14px}
+  .swatch{width:34px;height:16px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.15)}
+  .rank-range{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12.5px;min-width:96px;color:var(--muted)}
+
+  /* result box */
+  .result{
+    background:var(--beige);border:1px solid var(--line);border-radius:3px;
+    padding:22px 24px;margin-bottom:26px;
   }
-  .si-line{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-  .si-num{
+  .result .line{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .result .line + .line{margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)}
+  .result .lbl{font-size:15px}
+  .result .num{
     font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-    font-size:58px;font-weight:600;line-height:1;letter-spacing:-.02em;
-    font-variant-numeric:tabular-nums;
+    font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;
   }
-  .si-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-  .verdict{
-    display:inline-block;margin-top:14px;
-    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-    font-size:12px;letter-spacing:.06em;text-transform:uppercase;
-    padding:5px 11px;border-radius:2px;
+  .zone{
+    display:inline-block;margin-top:14px;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:2px;
+    border:1px solid rgba(0,0,0,.15);
   }
-  .verdict.stable{background:var(--stable-soft);color:var(--stable)}
-  .verdict.unstable{background:var(--unstable-soft);color:var(--unstable)}
-  .sub{display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
-  .sub .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
-  .sub .v{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:19px;font-variant-numeric:tabular-nums}
-  .delta.pos{color:var(--stable)} .delta.neg{color:var(--unstable)} .delta.zero{color:var(--muted)}
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
-  @media (max-width:640px){.grid{grid-template-columns:1fr;gap:22px}}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+  @media (max-width:640px){.grid{grid-template-columns:1fr;gap:24px}}
+  .group h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:14px}
 
-  .eyebrow.section{margin:0 0 14px}
-  .species{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:20px}
+  .species{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
   .species button{
     font-family:inherit;font-size:14px;text-align:left;background:var(--panel);
     border:1px solid var(--line);border-radius:2px;padding:10px 12px;cursor:pointer;
@@ -74,28 +94,24 @@
   .species button:hover{border-color:var(--muted)}
   .species button[aria-pressed="true"]{border-color:var(--accent);background:#fff;box-shadow:inset 0 0 0 1px var(--accent)}
 
-  .param{margin-bottom:16px}
+  .param{margin-bottom:15px}
   .param label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:6px}
   .param label .val{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:14px;font-variant-numeric:tabular-nums;color:var(--accent)}
   .param label .unit{color:var(--muted);font-size:12px;font-weight:normal}
   input[type=range]{width:100%;accent-color:var(--accent);height:20px}
 
   .reset{
-    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;
-    letter-spacing:.05em;color:var(--muted);background:none;border:1px solid var(--line);
-    border-radius:2px;padding:7px 12px;cursor:pointer;margin-top:4px;
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.05em;
+    color:var(--muted);background:none;border:1px solid var(--line);border-radius:2px;
+    padding:7px 12px;cursor:pointer;margin-top:2px;
   }
   .reset:hover{border-color:var(--muted);color:var(--ink)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.55}
 
-  details{margin-top:26px;border-top:1px solid var(--line);padding-top:16px}
-  summary{cursor:pointer;font-size:13px;color:var(--muted);letter-spacing:.04em}
-  .formula{
-    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13px;
-    background:var(--panel);border:1px solid var(--line);border-radius:2px;
-    padding:10px 12px;margin-top:12px;color:var(--accent);
-  }
-  details p{font-size:13.5px;color:var(--muted);margin-top:12px;line-height:1.6}
-  footer{margin-top:30px;font-size:12px;color:var(--muted);line-height:1.6}
+  footer{margin-top:32px;border-top:1px solid var(--line);padding-top:18px;font-size:13.5px;color:var(--muted);line-height:1.6; font-family:'Comic Sans MS', cursive;}
+  footer a{color:var(--accent)}
+  footer .ack{margin-top:12px}
+  @media (max-width:640px){header{min-height:auto}.header-copy{padding-right:100px}.header-logo{width:110px;top:12px}}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -103,30 +119,44 @@
 <div class="wrap">
 
   <header>
-    <div class="eyebrow">SINMAP · root reinforcement</div>
-    <h1>Does the tree hold the slope?</h1>
-    <p>Set the conditions of a hillside, choose a species Nuru plants or a root
-       cohesion value, and see the modeled Stability Index for that slope. A slope
-       is modeled as stable at SI&nbsp;≥&nbsp;1.5. The change is measured against the
-       same slope with no vegetation.</p>
+    <div class="header-copy">
+      <div class="eyebrow">SINMAP · agroforestry treatment</div>
+      <h1>Stability Index Mapping (SINMAP) Calculator for Agroforestry Treatment</h1>
+      <div class="subhead">Can tree planting increase slope stability?</div>
+      <p>This calculator evaluates slope stability using the SINMAP algorithm
+         (see the <a href="https://hydrology.usu.edu/dtarb/gishydro99/sinmap/sinmap.pdf"
+         target="_blank" rel="noopener">SINMAP manual</a>), which includes a root
+         cohesion parameter Cr (N/m²). Cr can be changed according to the chosen plant
+         species, and the calculator returns the Stability Index (SI).</p>
+    </div>
+    <img class="header-logo" src="Files/LehmanLogo_Black_Vertical.png" alt="Lehman College logo">
   </header>
 
-  <div class="readout">
-    <div class="si-line">
-      <span class="si-num" id="siOut">1.69</span>
-      <span class="si-label">Stability Index</span>
+  <div class="ranking">
+    <h2>SI ranking</h2>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-stable)"></span><span class="rank-range">SI &gt; 1.5</span><span>Stable slope zone</span></div>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-modstable)"></span><span class="rank-range">1.5 – 1.25</span><span>Moderately stable zone</span></div>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-quasi)"></span><span class="rank-range">1.25 – 1.0</span><span>Quasi-stable zone</span></div>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-lower)"></span><span class="rank-range">1.0 – 0.5</span><span>Lower threshold zone</span></div>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-upper)"></span><span class="rank-range">0.5 – 0.0</span><span>Upper threshold zone</span></div>
+    <div class="rank-row"><span class="swatch" style="background:var(--c-defended)"></span><span class="rank-range">&lt; 0.0</span><span>Defended slope zone</span></div>
+  </div>
+
+  <div class="result">
+    <div class="line">
+      <span class="lbl">Stability Index</span>
+      <span class="num" id="siOut">1.69</span>
     </div>
-    <span class="verdict stable" id="verdict">Stable</span>
-    <div class="sub">
-      <div><div class="k">Change vs. bare slope</div><div class="v delta zero" id="deltaOut">+0.0%</div></div>
-      <div><div class="k">Dimensionless cohesion C</div><div class="v" id="cOut">0.472</div></div>
-      <div><div class="k">Bare-slope SI</div><div class="v" id="baseOut">1.69</div></div>
+    <div class="line">
+      <span class="lbl">Treatment efficiency comparing to the bare slope (Cr = 0)</span>
+      <span class="num" id="deltaOut">+0.0%</span>
     </div>
+    <span class="zone" id="zone">Stable slope zone</span>
   </div>
 
   <div class="grid">
-    <div>
-      <div class="eyebrow section">Vegetation — root cohesion Cr</div>
+    <div class="group">
+      <h2>Root cohesion</h2>
       <div class="species" id="species"></div>
       <div class="param">
         <label for="cr">Root cohesion, Cr <span class="val"><span id="crVal">0</span> <span class="unit">N/m²</span></span></label>
@@ -134,8 +164,8 @@
       </div>
     </div>
 
-    <div>
-      <div class="eyebrow section">Hillside conditions</div>
+    <div class="group">
+      <h2>Hillslope and soil parameters</h2>
       <div class="param">
         <label for="slope">Slope angle, θ <span class="val"><span id="slopeVal">30</span> <span class="unit">deg</span></span></label>
         <input type="range" id="slope" min="5" max="60" step="1" value="30">
@@ -160,26 +190,33 @@
         <label for="r">Density ratio, r <span class="val"><span id="rVal">0.50</span></span></label>
         <input type="range" id="r" min="0" max="1" step="0.01" value="0.5">
       </div>
-      <button class="reset" id="reset" type="button">Reset to workbook values</button>
+      <button class="reset" id="reset" type="button">Reset to default values</button>
+      <p class="note">Default parameters for the hillslope and soil properties in
+         this calculator were taken, as an example, from the SINMAP modeling
+         conducted for the Nuru International Ethiopia project.</p>
     </div>
   </div>
 
-  <details>
-    <summary>How this is calculated</summary>
-    <div class="formula">C = (Cr + Cs) / (h · ρs · g)</div>
-    <div class="formula">SI = [ C + cosθ·(1 − W·r)·tanφ ] / sinθ</div>
-    <p>ρs (wet soil density) is fixed at 1800 kg/m³ and g at 9.81 m/s², as in the
-       workbook. Every other term is set above. C is the dimensionless combined
-       cohesion; SINMAP treats a cell as stable at SI ≥ 1.5. This is a single-slope
-       calculator, not a basin-wide model run: it answers what the index would be for
-       one hillside under the conditions you set, not where in the watershed planting
-       helps most.</p>
-  </details>
-
   <footer>
-    Formula and default values from the Nuru <em>Cohesion_SI</em> workbook. Species
-    root cohesion after Zegeye et al. (2018): Gravillea robusta 400, Eucalyptus
-    camaldulensis 1100, Acacia decurrens 3900 N/m². Prototype for review.
+    <strong>For calculations and formulae see the SINMAP algorithm manual:</strong>
+    <a href="https://hydrology.usu.edu/dtarb/gishydro99/sinmap/sinmap.pdf"
+       target="_blank" rel="noopener">hydrology.usu.edu/dtarb/gishydro99/sinmap/sinmap.pdf</a>
+    <div class="ack">
+      <strong>Acknowledgements.</strong> This calculator was designed and implemented
+      by Mr. Shawn Blackman and 
+      <a href = "https://imtiazmahmud.com/" target="_blank" >Mr. Imtiaz Mahmud</a>,
+      <a href = "https://www.lehman.edu/academics/natural-social-sciences/earth-environment-geospatial-sciences/" target="_blank" >Lehman College, Department of Earth,
+      Environmental and Geospatial Sciences</a>
+      , City University of New York, July 2026.
+
+      <a href = "https://www.lehman.edu/academics/natural-social-sciences/earth-environment-geospatial-sciences/ac-gorokhovich/" target="_blank" >Dr. Yuri Gorokhovich</a>
+       provided the calculation algorithm. Mr. Matt Lineal, Chief
+      Implementation Officer, 
+      <a href= "https://nuruinternational.org/nuru-ethiopia/" target="_blank">Nuru International Ethiopia</a>
+      , 
+      provided the funding, the
+      context for this work, and discussion.
+    </div>
   </footer>
 
 </div>
@@ -187,7 +224,14 @@
 <script>
   var G = 9.81, PS = 1800;                 // fixed, per workbook
   var DEG = 3.14 / 180;                     // workbook uses 3.14
-  var THRESH = 1.5;
+  var CLASSES = [
+    { min: 1.5,        name: "Stable slope zone",     css: "--c-stable" },
+    { min: 1.25,       name: "Moderately stable zone",css: "--c-modstable" },
+    { min: 1.0,        name: "Quasi-stable zone",     css: "--c-quasi" },
+    { min: 0.5,        name: "Lower threshold zone",  css: "--c-lower" },
+    { min: 0.0,        name: "Upper threshold zone",  css: "--c-upper" },
+    { min: -Infinity,  name: "Defended slope zone",   css: "--c-defended" }
+  ];
 
   var SPECIES = [
     { name: "None (bare slope)", cr: 0 },
@@ -195,13 +239,16 @@
     { name: "Acacia decurrens", cr: 3900 },
     { name: "Eucalyptus camaldulensis", cr: 1100 }
   ];
-
   var DEFAULTS = { cr:0, slope:30, h:0.6, w:0.5, cs:5000, phi:30, r:0.5 };
 
   function C(cr, cs, h){ return (cr + cs) / (h * PS * G); }
   function SI(cr, p){
     var th = p.slope * DEG, ph = p.phi * DEG;
     return (C(cr, p.cs, p.h) + Math.cos(th) * (1 - p.w * p.r) * Math.tan(ph)) / Math.sin(th);
+  }
+  function classify(si){
+    for (var i = 0; i < CLASSES.length; i++){ if (si > CLASSES[i].min) return CLASSES[i]; }
+    return CLASSES[CLASSES.length - 1];
   }
 
   var els = {
@@ -210,17 +257,15 @@
     cs:document.getElementById("cs"), phi:document.getElementById("phi"),
     r:document.getElementById("r")
   };
-  var out = {
-    si:document.getElementById("siOut"), c:document.getElementById("cOut"),
-    base:document.getElementById("baseOut"), delta:document.getElementById("deltaOut"),
-    verdict:document.getElementById("verdict")
-  };
   var vals = {
     cr:document.getElementById("crVal"), slope:document.getElementById("slopeVal"),
     h:document.getElementById("hVal"), w:document.getElementById("wVal"),
     cs:document.getElementById("csVal"), phi:document.getElementById("phiVal"),
     r:document.getElementById("rVal")
   };
+  var siOut = document.getElementById("siOut");
+  var deltaOut = document.getElementById("deltaOut");
+  var zoneEl = document.getElementById("zone");
 
   var sbox = document.getElementById("species");
   SPECIES.forEach(function(sp){
@@ -234,10 +279,8 @@
   });
 
   function readParams(){
-    return {
-      slope:+els.slope.value, h:+els.h.value, w:+els.w.value,
-      cs:+els.cs.value, phi:+els.phi.value, r:+els.r.value
-    };
+    return { slope:+els.slope.value, h:+els.h.value, w:+els.w.value,
+             cs:+els.cs.value, phi:+els.phi.value, r:+els.r.value };
   }
 
   function render(){
@@ -260,19 +303,18 @@
     var base = SI(0, p);
     var delta = base !== 0 ? 100 * (si - base) / base : 0;
 
-    out.si.textContent = si.toFixed(2);
-    out.c.textContent = C(cr, p.cs, p.h).toFixed(3);
-    out.base.textContent = base.toFixed(2);
-    out.delta.textContent = (delta >= 0 ? "+" : "") + delta.toFixed(1) + "%";
-    out.delta.className = "v delta " + (delta > 0.05 ? "pos" : (delta < -0.05 ? "neg" : "zero"));
+    siOut.textContent = si.toFixed(2);
+    deltaOut.textContent = (delta >= 0 ? "+" : "") + delta.toFixed(1) + "%";
 
-    var stable = si >= THRESH;
-    out.verdict.textContent = stable ? "Stable" : "Unstable";
-    out.verdict.className = "verdict " + (stable ? "stable" : "unstable");
+    var cls = classify(si);
+    zoneEl.textContent = cls.name;
+    var col = getComputedStyle(document.documentElement).getPropertyValue(cls.css).trim();
+    zoneEl.style.background = col;
+    // choose readable text colour on the swatch
+    zoneEl.style.color = (cls.css === "--c-quasi" || cls.css === "--c-lower") ? "#3a3320" : "#fff";
   }
 
   Object.keys(els).forEach(function(k){ els[k].addEventListener("input", render); });
-
   document.getElementById("reset").addEventListener("click", function(){
     Object.keys(DEFAULTS).forEach(function(k){ els[k].value = DEFAULTS[k]; });
     render();
